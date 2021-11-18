@@ -1,0 +1,85 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:spring-persist-*.xml</param-value>
+    </context-param>
+
+    <!-- 配置listner监听器ContextLoaderListener，加载spring的配置文件（mybatis和tx配置文件），创建spring的ioc容器 -->
+    <!-- ApplicationContext容器就是IOC容器，servletContext容器是web应用的容器，是单例的，只有一个 -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <!-- 配置filter过滤器characterEncodingFilter -->
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <!-- 指定字符集 -->
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <!-- 强制请求设置字符集 -->
+        <init-param>
+            <param-name>forceRequestEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <!-- 强制响应设置字符集 -->
+        <init-param>
+            <param-name>forceResponseEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <!-- 这个filter执行的顺序要在其他所有的filter前面 -->
+    <!--
+        原因如下：
+              request.setCharacterEncoding(encoding);必须在request.getParameter()前面，不然就不起作用了
+              response.setCharacterEncoding(encoding);必须在response.getWriter()前面，不然就不起作用了
+    -->
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 配置servlet容器DispatcherServlet，加载springMVC的配置文件（spring-web-mvc.xml）创建springMVC的ioc容器 -->
+    <!-- 至此项目跑起来一共就有两个ioc容器（spring的ioc容器和sptingMVC的ioc容器），spring的ioc容器是爸爸，因为先创建 -->
+    <servlet>
+        <servlet-name>springDispatcherServlet</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>classpath:spring-persist-mvc.xml</param-value>
+        </init-param>
+        <!-- servlet默认生命周期中，创建对象是在第一次接收请求时，而DispatcherServlet在创建对象后，会有大量的“框架”初始化操作，不适合第一次请求时来做 -->
+        <!-- 设置load-on-startup就是为了让DispatcherServlet在WEB应用启动时创建对象、初始化，数月小创建越早 -->
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>springDispatcherServlet</servlet-name>
+        <!-- 老项目一般会在这配置*.do，表示url访问的时候要带后缀.do才能访问后台 -->
+        <!-- url-pattern配置方式1：/表示拦截所有请求 -->
+        <!--<url-pattern>/</url-pattern>-->
+
+        <!-- url-pattern配置方式2：配置请求扩展名 -->
+        <!--
+         优点1：静态资源xxx.css、xxx.js、xxx.png等等静态资源完全不经过springmvc，不需要特殊处理
+         优点2：可以实现伪静态的效果，表面上看起来是访问一个html静态文件，实际上是经过java代码运算的结果
+            伪静态作用1：给黑客入侵增加难度
+            伪静态作用2：有利于SEO优化（让百度，谷歌这样的搜索引擎更容易找到我们的项目，排名更靠前）
+         缺点:不符合RESTFul风格
+          -->
+        <url-pattern>*.html</url-pattern>
+
+        <!--
+         另外怕配置.json的目的：为了使用ajax的时候后缀写成.json,其他请求写.html
+         如果一个ajax请求的扩展名是.html，但是实际服务器给浏览器返回的是json数据，二者就不匹配了，会出现406错误
+         -->
+        <url-pattern>*.json</url-pattern>
+
+    </servlet-mapping>
+</web-app>
